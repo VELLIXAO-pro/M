@@ -1,0 +1,12 @@
+{
+  "showAnnouncement": false,
+  "announcementText": "⚠ New V2 Update Available!",
+
+  "showContactButton": true,
+  "contactButtonText": "CONTACT ME",
+  "contactButtonUrl": "https://wa.me/6285706400133",
+
+  "showAnnouncementButton": false,
+  "announcementButtonText": "DOWNLOAD MOD",
+  "announcementButtonUrl": "https://vellixao.vercel.app"
+}
