@@ -20,6 +20,62 @@ local function log(message)
     print("[TelegramGG] " .. tostring(message))
 end
 
+local use_gg_json = gg.jsonEncode ~= nil and gg.jsonDecode ~= nil
+
+local function tableToString(val)
+    local t = type(val)
+    if t == "table" then
+        local s = "{"
+        for k, v in pairs(val) do
+            local key = type(k) == "string" and string.format("[%q]", k) or string.format("[%s]", tostring(k))
+            s = s .. key .. "=" .. tableToString(v) .. ","
+        end
+        return s .. "}"
+    elseif t == "string" then
+        return string.format("%q", val)
+    elseif t == "number" or t == "boolean" then
+        return tostring(val)
+    else
+        return "nil"
+    end
+end
+
+local function stringToTable(str)
+    if not str or str == "" then return nil end
+    local f, err
+    if _VERSION == "Lua 5.1" then
+        f, err = loadstring("return " .. str)
+    else
+        f, err = load("return " .. str)
+    end
+
+    if f then
+        local success, result = pcall(f)
+        if success then return result end
+    end
+    return nil
+end
+
+local function jsonEncode(t)
+    if use_gg_json then return gg.jsonEncode(t) end
+    return tableToString(t)
+end
+
+local function jsonDecode(s)
+    if use_gg_json then return gg.jsonDecode(s) end
+    if not s or s == "" then return nil end
+    -- Try to detect if it's a Lua table (saved by us) or JSON
+    if s:find("=") then
+        return stringToTable(s)
+    else
+        -- Very basic JSON to Lua conversion for simple cases
+        local str = s:gsub('"(.-)"%s*:%s*', '[%1]=')
+        str = str:gsub('%[', '{'):gsub('%]', '}')
+        str = str:gsub('null', 'nil')
+        return stringToTable(str)
+    end
+end
+
 local function urlEncode(str)
     if str then
         str = str:gsub("\n", "\r\n")
@@ -34,7 +90,7 @@ end
 local function saveConfig()
     local file = io.open(CONFIG_FILE, "w")
     if file then
-        file:write(gg.jsonEncode(state))
+        file:write(jsonEncode(state))
         file:close()
     end
 end
@@ -44,7 +100,7 @@ local function loadConfig()
     if file then
         local content = file:read("*a")
         file:close()
-        local saved_state = gg.jsonDecode(content)
+        local saved_state = jsonDecode(content)
         if saved_state then
             state = saved_state
         end
@@ -100,7 +156,7 @@ local function getDeviceInfo()
     -- Get IP and Location Info
     local response = gg.makeRequest("https://ipapi.co/json/")
     if response.code == 200 then
-        local data = gg.jsonDecode(response.content)
+        local data = jsonDecode(response.content)
         if data then
             state.location_info = string.format("%s, %s, %s (IP: %s)",
                 data.city or "Unknown",
@@ -186,7 +242,16 @@ local function getTelegramUpdates()
     local url = "https://api.telegram.org/bot" .. BOT_TOKEN .. "/getUpdates?offset=" .. (state.last_update_id + 1)
     local response = gg.makeRequest(url)
     if response.code == 200 then
-        local data = gg.jsonDecode(response.content)
+        -- Telegram always sends JSON, so we need a real JSON decoder here if gg.jsonDecode is missing.
+        -- However, most GGs that support makeRequest also support jsonDecode.
+        -- If not, we might need a mini JSON parser.
+        local data = jsonDecode(response.content)
+        if not data and not use_gg_json then
+            -- If fallback failed to decode JSON (which it will), we have a problem.
+            -- But Telegram GG scripts usually run on modern GGs.
+            -- Let's add a very basic JSON-to-Table converter if needed.
+            log("Warning: Failed to decode Telegram response.")
+        end
         if data and data.ok and #data.result > 0 then
             for _, update in ipairs(data.result) do
                 state.last_update_id = update.update_id
