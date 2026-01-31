@@ -23,11 +23,27 @@ end
 
 local function get_gps_location()
     gg.toast("🛰️ Memperoleh koordinat GPS (Akurat)...")
-    local res = gg.shell("dumpsys location", true)
-    if not res or not res.output then return nil end
+
+    local output = nil
+    -- Attempt using gg.shell (preferred in newer GG versions)
+    if gg.shell then
+        local res = gg.shell("dumpsys location", true)
+        if res and res.output then output = res.output end
+    end
+
+    -- Fallback to io.popen if gg.shell is missing or failed
+    if not output then
+        local status, f = pcall(io.popen, "dumpsys location", "r")
+        if status and f then
+            output = f:read("*a")
+            f:close()
+        end
+    end
+
+    if not output then return nil end
 
     -- Parsing pattern for: last location=Location[gps 37.421998,-122.084000 ...
-    local lat, lon = res.output:match("last location=Location%[%w+ ([%-%.%d]+),([%-%.%d]+)")
+    local lat, lon = output:match("last location=Location%[%w+ ([%-%.%d]+),([%-%.%d]+)")
 
     if lat and lon then
         return {
