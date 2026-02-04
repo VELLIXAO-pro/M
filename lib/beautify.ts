@@ -24,9 +24,13 @@ export function beautifyLua(code: string): string {
   });
 
   // 1.3: Simplify common string concatenations like "a" .. "b"
-  // Note: This is a bit risky but common in obfuscated code
+  // Only handle empty-looking or redundant quotes
   decoded = decoded.replace(/"\s*\.\.\s*"/g, "");
   decoded = decoded.replace(/'\s*\.\.\s*'/g, "");
+
+  // 1.4: Handle escaped newlines and tabs
+  decoded = decoded.replace(/\\n/g, "\n");
+  decoded = decoded.replace(/\\t/g, "\t");
 
   // Step 2: Basic indentation and formatting
   let indent = 0;
