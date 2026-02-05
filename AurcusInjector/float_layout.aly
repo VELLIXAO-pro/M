@@ -1,0 +1,66 @@
+{
+  LinearLayout;
+  layout_width="wrap_content";
+  layout_height="wrap_content";
+  orientation="vertical";
+  {
+    ImageView;
+    id="btn_icon";
+    layout_width="50dp";
+    layout_height="50dp";
+    src="https://raw.githubusercontent.com/Genis-H/Samurai-Panel/main/assets/icon.png"; -- Placeholder icon
+    backgroundColor="#dc143c";
+    padding="5dp";
+  };
+  {
+    LinearLayout;
+    id="menu_container";
+    layout_width="200dp";
+    layout_height="wrap_content";
+    orientation="vertical";
+    backgroundColor="#1a1a1a";
+    padding="10dp";
+    visibility="visible";
+    {
+      TextView;
+      text="AURCUS MOD MENU";
+      textColor="#dc143c";
+      textSize="14sp";
+      textStyle="bold";
+      layout_gravity="center";
+      layout_marginBottom="10dp";
+    };
+    {
+      Button;
+      id="item1";
+      text="Damage Mod (99999)";
+      layout_width="fill";
+      layout_height="40dp";
+      backgroundColor="#333333";
+      textColor="#ffffff";
+      textSize="12sp";
+      layout_marginBottom="5dp";
+    };
+    {
+      Button;
+      id="item2";
+      text="Speed Mod (1000)";
+      layout_width="fill";
+      layout_height="40dp";
+      backgroundColor="#333333";
+      textColor="#ffffff";
+      textSize="12sp";
+      layout_marginBottom="5dp";
+    };
+    {
+      Button;
+      id="btn_close";
+      text="CLOSE";
+      layout_width="fill";
+      layout_height="40dp";
+      backgroundColor="#dc143c";
+      textColor="#ffffff";
+      textSize="12sp";
+    };
+  };
+}

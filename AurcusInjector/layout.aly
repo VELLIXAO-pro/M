@@ -1,0 +1,40 @@
+{
+  LinearLayout;
+  layout_width="fill";
+  layout_height="fill";
+  orientation="vertical";
+  gravity="center";
+  backgroundColor="#1a1a1a";
+  {
+    TextView;
+    text="AURCUS INJECTOR";
+    textColor="#dc143c";
+    textSize="24sp";
+    textStyle="bold";
+    layout_marginBottom="32dp";
+  };
+  {
+    Button;
+    id="btn_start";
+    text="MULAI MOD MENU";
+    layout_width="200dp";
+    backgroundColor="#dc143c";
+    textColor="#ffffff";
+    layout_marginBottom="16dp";
+  };
+  {
+    Button;
+    id="btn_launch_game";
+    text="BUKA AURCUS ONLINE";
+    layout_width="200dp";
+    backgroundColor="#ffd700";
+    textColor="#000000";
+  };
+  {
+    TextView;
+    text="No-Root (ShareUID + Debug)";
+    textColor="#ffffff";
+    textSize="12sp";
+    layout_marginTop="32dp";
+  };
+}
