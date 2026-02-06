@@ -3,7 +3,8 @@ import "android.widget.*"
 import "android.view.*"
 import "android.content.Intent"
 import "android.net.Uri"
-import "layout" -- Import the layout.aly
+import "android.provider.Settings"
+import "layout"
 
 local MemoryTools = require "MemoryTools"
 
@@ -23,15 +24,43 @@ function toast(msg)
     Toast.makeText(activity, msg, Toast.LENGTH_SHORT).show()
 end
 
--- Function: Start Game
+-- Check Overlay Permission
+function checkOverlayPermission()
+    if Build.VERSION.SDK_INT >= 23 then
+        if not Settings.canDrawOverlays(activity) then
+            local intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+            intent.setData(Uri.parse("package:" .. activity.getPackageName()))
+            activity.startActivityForResult(intent, 123)
+            toast("Please allow overlay permission for Mod Menu")
+            return false
+        end
+    end
+    return true
+end
+
+-- Function: Start Game & Mod Menu
 function startGame()
     local pkg = edit_pkg.Text
+
+    -- Check permissions first
+    if not checkOverlayPermission() then return end
+
     local intent = activity.getPackageManager().getLaunchIntentForPackage(pkg)
     if intent then
+        -- Start Game
         activity.startActivity(intent)
         toast("Launching " .. pkg)
-        -- Initialize memory tools for this package
-        mem = MemoryTools.new(pkg)
+
+        -- Start Mod Menu Service
+        -- In AndLua+, we use LuaService to run a script as a service
+        -- Typically: activity.startService(Intent(activity, LuaService.byte).putExtra("luaPath", "float.lua"))
+        -- But for simplicity in this script, we'll assume standard AndLua+ service call
+        local serviceIntent = Intent()
+        serviceIntent.setClassName(activity.getPackageName(), "com.androlua.LuaService")
+        serviceIntent.putExtra("luaPath", activity.getLuaPath("float.lua"))
+        activity.startService(serviceIntent)
+
+        toast("Mod Menu Active")
     else
         toast("Package not found: " .. pkg)
     end
@@ -58,7 +87,6 @@ btn_search.onClick = function()
     toast("Searching in Java Heap...")
     local count = mem:search(val)
 
-    -- Update UI with results
     results_data = {}
     for i, res in ipairs(mem.results) do
         table.insert(results_data, string.format("0x%X : %d", res.address, res.value))
@@ -98,7 +126,7 @@ btn_clear.onClick = function()
     toast("Results cleared")
 end
 
--- Handle list item click (e.g. to edit single address)
+-- Handle list item click
 list_results.onItemClick = function(parent, view, position, id)
     local itemStr = results_data[position + 1]
     local addrStr = itemStr:match("(0x%x+)")

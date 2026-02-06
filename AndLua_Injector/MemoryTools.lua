@@ -29,7 +29,6 @@ function MemoryTools:getPID()
         for part in line:gmatch("%S+") do
             table.insert(parts, part)
         end
-        -- Standard ps output: USER PID PPID ...
         if parts[2] and tonumber(parts[2]) then
             self.pid = tonumber(parts[2])
             return self.pid
@@ -48,7 +47,6 @@ function MemoryTools:getMaps()
 
     local ranges = {}
     for line in output:gmatch("[^\r\n]+") do
-        -- Filter for Java Heap / ashmem / dalvik
         if line:find("/dev/ashmem") or line:find("dalvik") then
             local startAddr, endAddr = line:match("(%x+)-(%x+)")
             if startAddr and endAddr then
@@ -71,7 +69,6 @@ function MemoryTools:readDword(address)
     local data = p:read(4)
     p:close()
     if data and #data == 4 then
-        -- Unpack little-endian 4-byte integer
         local b1, b2, b3, b4 = data:byte(1, 4)
         return b1 + b2 * 256 + b3 * 65536 + b4 * 16777216
     end
@@ -80,41 +77,57 @@ end
 
 -- Writes a DWORD (4 bytes) to a specific address
 function MemoryTools:writeDword(address, value)
-    -- Convert value to little-endian 4-byte string
+    -- Handle negative values (signed to unsigned 32-bit)
+    if value < 0 then value = value + 4294967296 end
+
     local b1 = value % 256
     local b2 = math.floor(value / 256) % 256
     local b3 = math.floor(value / 65536) % 256
     local b4 = math.floor(value / 16777216) % 256
     local hexStr = string.format("\\x%02x\\x%02x\\x%02x\\x%02x", b1, b2, b3, b4)
 
-    -- Using printf to pipe binary data into dd
     local cmd = string.format("printf '%s' | run-as %s dd of=/proc/%d/mem bs=1 seek=%d count=4 conv=notrunc 2>/dev/null",
                                hexStr, self.packageName, self.pid, address)
     self:exec(cmd)
     return true
 end
 
--- Searches for a DWORD in Java Heap
-function MemoryTools:search(value)
+-- Helper to convert number to 4-byte little-endian string
+function MemoryTools:toBin32(val)
+    if val < 0 then val = val + 4294967296 end
+    local b1 = val % 256
+    local b2 = math.floor(val / 256) % 256
+    local b3 = math.floor(val / 65536) % 256
+    local b4 = math.floor(val / 16777216) % 256
+    return string.char(b1, b2, b3, b4)
+end
+
+-- Group Search (values: table of numbers, proximity: max distance between values)
+function MemoryTools:groupSearch(values, proximity)
     local ranges = self:getMaps()
-    if not ranges then return 0 end
+    if not ranges or #values == 0 then return 0 end
 
     self.results = {}
-    local targetValue = tonumber(value)
 
-    -- Little-endian pattern to look for in binary string
-    local b1 = targetValue % 256
-    local b2 = math.floor(targetValue / 256) % 256
-    local b3 = math.floor(targetValue / 65536) % 256
-    local b4 = math.floor(targetValue / 16777216) % 256
-    local pattern = string.char(b1, b2, b3, b4)
+    -- We focus on searching for the first value (or the largest one for better performance)
+    -- Let's pick the largest value as the primary anchor
+    local anchorIdx = 1
+    local maxV = -1
+    for i, v in ipairs(values) do
+        if v > maxV then
+            maxV = v
+            anchorIdx = i
+        end
+    end
+
+    local anchorValue = values[anchorIdx]
+    local anchorPattern = self:toBin32(anchorValue)
 
     for _, range in ipairs(ranges) do
         local size = range["end"] - range.start
-        -- Read in chunks of 512KB to avoid excessive memory usage in Lua
         local chunkSize = 512 * 1024
         for offset = 0, size - 4, chunkSize do
-            local currentRead = math.min(chunkSize + 3, size - offset) -- overlap by 3 bytes to catch values across chunks
+            local currentRead = math.min(chunkSize + 128, size - offset)
             local cmd = string.format("run-as %s dd if=/proc/%d/mem bs=1 count=%d skip=%d 2>/dev/null",
                                        self.packageName, self.pid, currentRead, range.start + offset)
             local p = io.popen(cmd)
@@ -124,23 +137,50 @@ function MemoryTools:search(value)
             if data then
                 local startPos = 1
                 while true do
-                    local foundPos = data:find(pattern, startPos, true)
+                    local foundPos = data:find(anchorPattern, startPos, true)
                     if not foundPos then break end
 
-                    table.insert(self.results, {
-                        address = range.start + offset + foundPos - 1,
-                        value = targetValue
-                    })
-                    startPos = foundPos + 1
+                    local absoluteAddr = range.start + offset + foundPos - 1
 
-                    -- Limit results to avoid crashing UI
-                    if #self.results > 1000 then return #self.results end
+                    -- Now check proximity for other values
+                    local allFound = true
+                    for i, targetVal in ipairs(values) do
+                        if i ~= anchorIdx then
+                            local targetPattern = self:toBin32(targetVal)
+                            -- Look in a window around the anchor
+                            local windowStart = math.max(1, foundPos - proximity)
+                            local windowEnd = math.min(#data, foundPos + 4 + proximity)
+                            local windowData = data:sub(windowStart, windowEnd)
+
+                            if not windowData:find(targetPattern, 1, true) then
+                                allFound = false
+                                break
+                            end
+                        end
+                    end
+
+                    if allFound then
+                        -- Store all values in the group as results (or just the anchor/focus)
+                        -- User wants to focus on 65536
+                        table.insert(self.results, {
+                            address = absoluteAddr,
+                            value = anchorValue
+                        })
+                    end
+
+                    startPos = foundPos + 1
+                    if #self.results > 500 then return #self.results end
                 end
             end
         end
     end
 
     return #self.results
+end
+
+-- Standard search
+function MemoryTools:search(value)
+    return self:groupSearch({tonumber(value)}, 0)
 end
 
 return MemoryTools
