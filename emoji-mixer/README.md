@@ -1,36 +1,25 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Samurai Emoji Mixer
 
-## Getting Started
+Website untuk generate teks emoji kustom dan font unik dengan tema Samurai.
 
-First, run the development server:
+## Fitur
+- **Fancy Fonts**: Ubah teks biasa menjadi gaya unik (Bold, Script, Fraktur, dll).
+- **Emoji Decorator**: Tambahkan emoji di sela-sela huruf, membungkus huruf, atau sebagai bingkai.
+- **Emoji Mixer**: Mix dua emoji berbeda ke dalam teks Anda.
+- **Salin Cepat**: Tombol salin untuk memudahkan penggunaan hasil di aplikasi lain.
+- **Tema Samurai**: Desain elegan dengan warna Hitam, Crimson Red, dan Emas.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Teknologi
+- Next.js
+- Tailwind CSS v4
+- Sawarabi Mincho Font
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Cara Menjalankan Lokal
+1. Masuk ke direktori: `cd emoji-mixer`
+2. Install dependensi: `npm install`
+3. Jalankan server dev: `npm run dev`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment ke Vercel
+Proyek ini mendukung deployment ke Vercel secara otomatis. Karena file proyek berada di dalam folder `emoji-mixer`, file `vercel.json` di root telah dikonfigurasi untuk mengarahkan Vercel ke direktori yang tepat.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Cukup hubungkan repositori ini ke akun Vercel Anda, dan Vercel akan mendeteksi pengaturan dari `vercel.json`.
