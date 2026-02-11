@@ -1,16 +1,19 @@
-# Samurai Emoji Mixer
+# Samurai Emoji Debugger
 
-Website untuk generate teks emoji kustom dan font unik dengan tema Samurai.
+Alat profesional untuk pembuatan custom emoji dan pengujian stabilitas Unicode pada game.
 
-## Fitur
-- **Fancy Fonts**: Ubah teks biasa menjadi gaya unik (Bold, Script, Fraktur, dll).
-- **Emoji Decorator**: Tambahkan emoji di sela-sela huruf, membungkus huruf, atau sebagai bingkai.
-- **Emoji Mixer**: Mix dua emoji berbeda ke dalam teks Anda.
-- **Salin Cepat**: Tombol salin untuk memudahkan penggunaan hasil di aplikasi lain.
-- **Tema Samurai**: Desain elegan dengan warna Hitam, Crimson Red, dan Emas.
+## Fitur Utama
+- **Custom Emoji Builder (ZWJ)**: Gabungkan berbagai emoji menggunakan Zero Width Joiner untuk membuat kombinasi baru (misal: 🦹‍♂️ kustom).
+- **Bug / Stress Test Generator**: Hasilkan urutan Unicode kompleks untuk menguji parser dan layout engine game:
+  - **ZWJ Flooding**: Menguji performa render layout.
+  - **BiDi Overrides**: Menguji penanganan arah teks (RTL/LTR).
+  - **Lone Surrogates**: Menguji ketahanan parser terhadap urutan UTF-16 yang tidak valid.
+  - **Variation Selector Flood**: Menguji batas memori/buffer render.
+- **Fancy Fonts**: Transformasi teks ke berbagai gaya Unicode (Bold, Script, Fraktur).
+- **Salin Kode**: Satu klik untuk menyalin hasil pengujian ke clipboard.
 
 ## Teknologi
-- Next.js
+- Next.js 15
 - Tailwind CSS v4
 - Sawarabi Mincho Font
 
@@ -20,10 +23,4 @@ Website untuk generate teks emoji kustom dan font unik dengan tema Samurai.
 3. Jalankan server dev: `npm run dev`
 
 ## Deployment ke Vercel
-Untuk men-deploy ke Vercel:
-1. Jalankan `vercel` di dalam folder `emoji-mixer`:
-   ```bash
-   cd emoji-mixer
-   vercel
-   ```
-2. Atau jika menjalankan dari root, pastikan untuk memilih direktori `./emoji-mixer` saat ditanya oleh Vercel CLI.
+Jalankan `vercel` di dalam folder `emoji-mixer` atau atur Root Directory ke `emoji-mixer` pada dashboard Vercel.

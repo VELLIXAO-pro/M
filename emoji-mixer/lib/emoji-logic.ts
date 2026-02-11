@@ -40,3 +40,42 @@ export function mixEmojis(text: string, emoji1: string, emoji2: string) {
 
   return Array.from(text).map((char, i) => `${char}${i % 2 === 0 ? emoji1 : emoji2}`).join("");
 }
+
+// --- BUG & STRESS TEST LOGIC ---
+
+export function generateBug(type: 'bidi' | 'zwj_flood' | 'surrogate' | 'variation', intensity: number = 10) {
+  switch (type) {
+    case 'bidi':
+      // Mixes Right-to-Left and Left-to-Right overrides
+      return "\u202E" + "SAMURAI BUG" + "\u202D" + " 🔥 ".repeat(intensity) + "\u202C";
+
+    case 'zwj_flood':
+      // Chaining many emojis with ZWJ to test layout engine
+      const emojis = ["👩‍👩‍👧‍👦", "🦸‍♂️", "🧟", "🧛"];
+      let chain = "";
+      for (let i = 0; i < intensity; i++) {
+        chain += emojis[i % emojis.length] + "\u200D";
+      }
+      return chain;
+
+    case 'surrogate':
+      // Lone surrogates can crash some C++ based parsers (like in older games)
+      // We use String.fromCharCode to bypass JS's friendly UTF-16 handling
+      let bug = "";
+      for (let i = 0; i < intensity; i++) {
+        bug += String.fromCharCode(0xD800 + i % 100);
+      }
+      return bug;
+
+    case 'variation':
+      // Flooding a character with variation selectors
+      return "A" + "\uFE0F".repeat(intensity * 10);
+
+    default:
+      return "Unknown Bug Type";
+  }
+}
+
+export function buildCustomEmoji(parts: string[]) {
+  return parts.join("\u200D");
+}

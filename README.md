@@ -1,9 +1,9 @@
 # Samurai Projects
 
-Koleksi tools dan website bertema Samurai.
+Koleksi tools dan website bertema Samurai untuk pengembangan dan pengujian.
 
 ## Projects
-- [**Samurai Emoji Mixer**](./emoji-mixer): Website untuk generate teks emoji kustom dan font unik.
+- [**Samurai Emoji Debugger**](./emoji-mixer): Alat untuk membuat custom emoji (ZWJ) dan pengujian stress-test Unicode (Bug Emoji) untuk game.
 
 ## Deployment
 Repositori ini mendukung deployment ke Vercel.
