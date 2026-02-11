@@ -20,6 +20,10 @@ Website untuk generate teks emoji kustom dan font unik dengan tema Samurai.
 3. Jalankan server dev: `npm run dev`
 
 ## Deployment ke Vercel
-Proyek ini mendukung deployment ke Vercel secara otomatis. Karena file proyek berada di dalam folder `emoji-mixer`, file `vercel.json` di root telah dikonfigurasi untuk mengarahkan Vercel ke direktori yang tepat.
-
-Cukup hubungkan repositori ini ke akun Vercel Anda, dan Vercel akan mendeteksi pengaturan dari `vercel.json`.
+Untuk men-deploy ke Vercel:
+1. Jalankan `vercel` di dalam folder `emoji-mixer`:
+   ```bash
+   cd emoji-mixer
+   vercel
+   ```
+2. Atau jika menjalankan dari root, pastikan untuk memilih direktori `./emoji-mixer` saat ditanya oleh Vercel CLI.
