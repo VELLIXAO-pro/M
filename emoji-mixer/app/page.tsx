@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useMemo } from "react";
 import {
   convertToFancy,
   decorateText,
@@ -27,23 +27,22 @@ export default function Home() {
   // Custom State
   const [customParts, setCustomParts] = useState<string[]>(["🦹", "♂️"]);
 
-  const [result, setResult] = useState("");
-
-  useEffect(() => {
+  const result = useMemo(() => {
     if (activeTab === "standard") {
       let processed = text;
       if (style !== "normal") processed = convertToFancy(processed, style);
       if (mode === "interleave" || mode === "wrap" || mode === "border") {
-        processed = decorateText(processed, emoji1, mode as any);
+        processed = decorateText(processed, emoji1, mode as 'interleave' | 'wrap' | 'border');
       } else if (mode === "mix") {
         processed = mixEmojis(processed, emoji1, emoji2);
       }
-      setResult(processed);
+      return processed;
     } else if (activeTab === "bug") {
-      setResult(generateBug(bugType, intensity));
+      return generateBug(bugType, intensity);
     } else if (activeTab === "custom") {
-      setResult(buildCustomEmoji(customParts));
+      return buildCustomEmoji(customParts);
     }
+    return "";
   }, [text, emoji1, emoji2, mode, style, activeTab, bugType, intensity, customParts]);
 
   const copyToClipboard = () => {
@@ -64,23 +63,26 @@ export default function Home() {
       <div className="w-full max-w-3xl bg-white/5 border border-gold/20 rounded-2xl overflow-hidden shadow-2xl backdrop-blur-md">
         {/* Tabs */}
         <div className="flex bg-black/40 border-b border-gold/10">
-          {[
-            { id: "standard", label: "Mixer Standar" },
-            { id: "custom", label: "Custom Emoji (ZWJ)" },
-            { id: "bug", label: "Bug / Stress Test" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 py-4 text-sm font-bold uppercase tracking-wider transition-all ${
-                activeTab === tab.id
-                  ? "bg-crimson text-white border-b-2 border-gold"
-                  : "text-gray-500 hover:text-gold hover:bg-white/5"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
+          {(["standard", "custom", "bug"] as const).map((tabId) => {
+             const labels = {
+               standard: "Mixer Standar",
+               custom: "Custom Emoji (ZWJ)",
+               bug: "Bug / Stress Test"
+             };
+             return (
+              <button
+                key={tabId}
+                onClick={() => setActiveTab(tabId)}
+                className={`flex-1 py-4 text-sm font-bold uppercase tracking-wider transition-all ${
+                  activeTab === tabId
+                    ? "bg-crimson text-white border-b-2 border-gold"
+                    : "text-gray-500 hover:text-gold hover:bg-white/5"
+                }`}
+              >
+                {labels[tabId]}
+              </button>
+             );
+          })}
         </div>
 
         <div className="p-6 md:p-8">
@@ -120,7 +122,7 @@ export default function Home() {
                     id="font-style"
                     className="w-full bg-black/50 border border-crimson/30 rounded-lg p-3 text-white"
                     value={style}
-                    onChange={(e) => setStyle(e.target.value as any)}
+                    onChange={(e) => setStyle(e.target.value as keyof typeof fancyStyles | "normal")}
                   >
                     <option value="normal">Normal</option>
                     <option value="bold">Bold</option>
@@ -134,21 +136,36 @@ export default function Home() {
               <div>
                 <label className="block text-gold text-xs font-bold mb-2 uppercase">Mode Dekorasi</label>
                 <div className="flex flex-wrap gap-2">
-                  {[
-                    { id: "none", label: "Polos" },
-                    { id: "interleave", label: "Sela-Sela" },
-                    { id: "wrap", label: "Bungkus" },
-                    { id: "mix", label: "Mix 2 Emoji" },
-                  ].map(m => (
-                    <button
-                      key={m.id}
-                      onClick={() => setMode(m.id as any)}
-                      className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-tighter transition-all ${mode === m.id ? "bg-crimson" : "bg-white/5 text-gray-400 hover:text-white"}`}
-                    >
-                      {m.label}
-                    </button>
-                  ))}
+                  {(["none", "interleave", "wrap", "mix"] as const).map(mId => {
+                    const labels = {
+                      none: "Polos",
+                      interleave: "Sela-Sela",
+                      wrap: "Bungkus",
+                      mix: "Mix 2 Emoji"
+                    };
+                    return (
+                      <button
+                        key={mId}
+                        onClick={() => setMode(mId)}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-tighter transition-all ${mode === mId ? "bg-crimson" : "bg-white/5 text-gray-400 hover:text-white"}`}
+                      >
+                        {labels[mId]}
+                      </button>
+                    );
+                  })}
                 </div>
+                {mode === "mix" && (
+                   <div className="mt-4">
+                      <label htmlFor="emoji-2" className="block text-gold text-xs font-bold mb-2 uppercase">Emoji Kedua</label>
+                      <input
+                        id="emoji-2"
+                        type="text"
+                        className="w-full bg-black/50 border border-crimson/30 rounded-lg p-3"
+                        value={emoji2}
+                        onChange={(e) => setEmoji2(e.target.value)}
+                      />
+                   </div>
+                )}
               </div>
             </div>
           )}
@@ -192,7 +209,7 @@ export default function Home() {
                     id="bug-type"
                     className="w-full bg-black/50 border border-crimson/30 rounded-lg p-3 text-white"
                     value={bugType}
-                    onChange={(e) => setBugType(e.target.value as any)}
+                    onChange={(e) => setBugType(e.target.value as 'bidi' | 'zwj_flood' | 'surrogate' | 'variation')}
                   >
                     <option value="zwj_flood">ZWJ Flooding (Layout Engine Test)</option>
                     <option value="bidi">BiDi Override (UI/Text Direction Bug)</option>
