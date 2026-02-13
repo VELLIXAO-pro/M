@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #1a1a1a;
+  --color-foreground: #ffffff;
+  --color-crimson: #dc143c;
+  --color-gold: #ffd700;
+  --font-samurai: "Sawarabi Mincho", serif;
+}
+
+:root {
+  --background: #1a1a1a;
+  --foreground: #ffffff;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
