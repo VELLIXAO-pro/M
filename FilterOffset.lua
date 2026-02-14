@@ -35,7 +35,9 @@ function main()
             -- Criteria for "encrypted" (pointer) based on Pointer.lua and visual analysis
             -- Pointer range: 0x10000 to 0x7FFFFFFF (65536 to 2147483647)
             local val = v.value
-            if type(val) == "string" then val = tonumber(val:match("^-?%d+")) end
+            if type(val) == "string" then
+                val = tonumber(val:match("^-?%d+"))
+            end
 
             if not val or val < 65536 or val > 2147483647 then
                 is_match = false
@@ -50,7 +52,7 @@ function main()
 
     gg.clearResults()
     if #keep > 0 then
-        gg.addResults(keep)
+        -- Use loadResults instead of addResults for compatibility with some GG versions
         gg.loadResults(keep)
         gg.alert("Found " .. #keep .. " matching results.\nFiltered from " .. count .. " original results.")
     else
