@@ -1,0 +1,75 @@
+{
+  FrameLayout;
+  layout_width="wrap";
+  layout_height="wrap";
+  {
+    LinearLayout;
+    id="icon_container";
+    layout_width="50dp";
+    layout_height="50dp";
+    gravity="center";
+    background="#dc143c"; -- Crimson Red
+    {
+      TextView;
+      text="S";
+      textColor="#ffd700"; -- Gold
+      textSize="24sp";
+      style="?android:attr/textViewStyle";
+    };
+  };
+  {
+    CardView;
+    id="main_menu";
+    layout_width="200dp";
+    layout_height="wrap";
+    layout_marginLeft="60dp";
+    cardBackgroundColor="#1a1a1a";
+    radius="10dp";
+    visibility="gone";
+    {
+      LinearLayout;
+      layout_width="fill";
+      orientation="vertical";
+      padding="10dp";
+      {
+        TextView;
+        text="SAMURAI MOD MENU";
+        textColor="#dc143c";
+        textSize="16sp";
+        layout_gravity="center";
+      };
+      {
+        View;
+        layout_width="fill";
+        layout_height="1dp";
+        backgroundColor="#333333";
+        layout_margin="5dp";
+      };
+      {
+        LinearLayout;
+        layout_width="fill";
+        orientation="horizontal";
+        gravity="center_vertical";
+        {
+          TextView;
+          text="Plot Armor";
+          textColor="#ffffff";
+          layout_weight=1;
+        };
+        {
+          Switch;
+          id="switch_plot_armor";
+        };
+      };
+      {
+        Button;
+        id="btn_close_menu";
+        text="CLOSE";
+        layout_width="fill";
+        backgroundColor="#333333";
+        textColor="#ffffff";
+        layout_marginTop="10dp";
+      };
+    };
+  };
+}
