@@ -12,19 +12,36 @@ pcall(function() import "android.support.v7.widget.CardView" end)
 
 local service = ...
 if not service then service = this end
+
+-- Defensive check for service context
+if not service or not service.getSystemService then
+  error("This script must be run as a Service context")
+end
+
 local wm = service.getSystemService(Context.WINDOW_SERVICE)
 local isConsoleVisible = false
 
 math.randomseed(os.time())
 
+-- Get project directory safely
+local luaDir = tostring(service.getLuaDir())
+if luaDir == "null" or luaDir == "" then
+  -- Fallback if getLuaDir() fails (common in some buggy environments)
+  luaDir = "/sdcard/AndLua/project/Metasploit"
+end
+
 -- Function to load .aly files safely
 function loadAly(name)
-  local path = service.getLuaDir().."/"..name..".aly"
+  local path = luaDir.."/"..name..".aly"
   local f, err = loadfile(path)
   if f then
     return f()
   else
-    error("Failed to load layout "..name..": "..tostring(err))
+    -- Try another fallback path if the first one failed
+    local fallbackPath = service.getLuaPath():gsub("[^/]+$", "")..name..".aly"
+    f, err = loadfile(fallbackPath)
+    if f then return f() end
+    error("Failed to load layout "..name.." at "..path..": "..tostring(err))
   end
 end
 
@@ -188,7 +205,7 @@ wm.addView(float_layout, lp)
 
 -- Handle service destruction
 function onDestroy()
-  wm.removeView(float_layout)
+  if float_layout then wm.removeView(float_layout) end
   if isConsoleVisible then
     wm.removeView(console_layout)
   end

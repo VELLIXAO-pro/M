@@ -29,13 +29,15 @@ function onActivityResult(requestCode, resultCode, data)
 end
 
 function startFloat()
-  local luaPath = activity.getLuaPath():gsub("main.lua", "float.lua")
+  -- Using 'arg' with filename is the most compatible way in AndLua+
   local intent = Intent()
   intent.setClassName(activity.getPackageName(), "com.androlua.LuaService")
-  intent.putExtra("luaPath", luaPath)
+  intent.putExtra("arg", "service.lua")
   activity.startService(intent)
-  -- activity.finish() -- Keep activity for now to ensure service starts
-  print("Service started successfully")
+
+  -- We can finish the activity now that the service is started
+  activity.finish()
+  print("Metasploit service started.")
 end
 
 if checkPermission() then
