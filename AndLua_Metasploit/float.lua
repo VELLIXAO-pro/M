@@ -3,6 +3,7 @@ import "android.app.*"
 import "android.os.*"
 import "android.widget.*"
 import "android.view.*"
+import "android.view.inputmethod.EditorInfo"
 import "android.content.*"
 import "android.graphics.*"
 import "android.graphics.drawable.*"
@@ -52,7 +53,8 @@ local firstX, firstY, wmX, wmY
 local isMoving = false
 
 -- Assuming 'icon_image' is the ID in float_layout.aly
-icon_image.onTouch = function(v, event)
+-- Draggable logic applied to the root view for better responsiveness
+float_root.onTouch = function(v, event)
   local action = event.getAction()
   if action == MotionEvent.ACTION_DOWN then
     firstX = event.getRawX()

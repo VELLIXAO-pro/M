@@ -29,7 +29,7 @@ function onActivityResult(requestCode, resultCode, data)
 end
 
 function startFloat()
-  local intent = Intent(activity, LuaService.find(this).getClass())
+  local intent = Intent(activity, luajava.bindClass("com.androlua.LuaService"))
   intent.putExtra("luaPath", activity.getLuaDir().."/float.lua")
   activity.startService(intent)
   activity.finish()

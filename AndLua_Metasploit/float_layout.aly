@@ -1,5 +1,6 @@
 {
   LinearLayout;
+  id="float_root";
   layout_width="wrap_content";
   layout_height="wrap_content";
   {
