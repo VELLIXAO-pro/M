@@ -1,4 +1,4 @@
-{
+return {
   LinearLayout;
   id="float_root";
   layout_width="wrap_content";

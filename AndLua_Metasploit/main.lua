@@ -29,10 +29,13 @@ function onActivityResult(requestCode, resultCode, data)
 end
 
 function startFloat()
-  local intent = Intent(activity, luajava.bindClass("com.androlua.LuaService"))
-  intent.putExtra("luaPath", activity.getLuaDir().."/float.lua")
+  local luaPath = activity.getLuaPath():gsub("main.lua", "float.lua")
+  local intent = Intent()
+  intent.setClassName(activity.getPackageName(), "com.androlua.LuaService")
+  intent.putExtra("luaPath", luaPath)
   activity.startService(intent)
-  activity.finish()
+  -- activity.finish() -- Keep activity for now to ensure service starts
+  print("Service started successfully")
 end
 
 if checkPermission() then

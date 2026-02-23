@@ -11,14 +11,26 @@ pcall(function() import "androidx.cardview.widget.CardView" end)
 pcall(function() import "android.support.v7.widget.CardView" end)
 
 local service = ...
+if not service then service = this end
 local wm = service.getSystemService(Context.WINDOW_SERVICE)
 local isConsoleVisible = false
 
 math.randomseed(os.time())
 
+-- Function to load .aly files safely
+function loadAly(name)
+  local path = service.getLuaDir().."/"..name..".aly"
+  local f, err = loadfile(path)
+  if f then
+    return f()
+  else
+    error("Failed to load layout "..name..": "..tostring(err))
+  end
+end
+
 -- Layouts
-local float_layout = loadlayout(service.getLuaDir().."/float_layout.aly")
-local console_layout = loadlayout(service.getLuaDir().."/console_layout.aly")
+local float_layout = loadlayout(loadAly("float_layout"))
+local console_layout = loadlayout(loadAly("console_layout"))
 
 -- LayoutParams for Icon
 local lp = WindowManager.LayoutParams()
@@ -52,7 +64,6 @@ clp.height = WindowManager.LayoutParams.MATCH_PARENT
 local firstX, firstY, wmX, wmY
 local isMoving = false
 
--- Assuming 'icon_image' is the ID in float_layout.aly
 -- Draggable logic applied to the root view for better responsiveness
 float_root.onTouch = function(v, event)
   local action = event.getAction()
@@ -87,7 +98,7 @@ function toggleConsole()
   end
 end
 
--- Close console logic (if there's a close button)
+-- Close console logic
 close_btn.onClick = function()
   toggleConsole()
 end
