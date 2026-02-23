@@ -1,0 +1,199 @@
+:root {
+    --bg-color: #1a1a1a;
+    --card-bg: #252525;
+    --primary-red: #dc143c;
+    --gold: #ffd700;
+    --text-white: #f0f0f0;
+    --text-muted: #a0a0a0;
+    --success: #28a745;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-white);
+    font-family: 'Sawarabi Mincho', sans-serif;
+    line-height: 1.6;
+}
+
+h1, h2, h3 {
+    font-family: 'Permanent Marker', cursive;
+    color: var(--primary-red);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+header {
+    text-align: center;
+    margin-bottom: 40px;
+    border-bottom: 2px solid var(--primary-red);
+    padding-bottom: 20px;
+}
+
+header h1 {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+/* Bot Grid */
+.bot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.bot-card {
+    background: var(--card-bg);
+    border: 1px solid #333;
+    border-left: 5px solid var(--primary-red);
+    padding: 20px;
+    border-radius: 4px;
+    transition: transform 0.3s, border-color 0.3s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.bot-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--gold);
+}
+
+.bot-card h3 {
+    margin-bottom: 10px;
+    color: var(--text-white);
+}
+
+.bot-status {
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+}
+
+.status-running { background: var(--success); }
+.status-stopped { background: #555; }
+
+/* Buttons */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    font-family: 'Sawarabi Mincho', sans-serif;
+    transition: filter 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn:hover {
+    filter: brightness(1.2);
+}
+
+.btn-red { background-color: var(--primary-red); color: white; }
+.btn-gold { background-color: var(--gold); color: black; }
+.btn-green { background-color: var(--success); color: white; }
+.btn-gray { background-color: #555; color: white; }
+.btn-full { width: 100%; display: flex; justify-content: center; }
+
+/* Console */
+.console-wrapper {
+    background: #000;
+    border: 1px solid var(--primary-red);
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.console-header {
+    background: #222;
+    padding: 10px;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #333;
+    font-size: 0.9rem;
+    color: var(--gold);
+}
+
+.console-output {
+    height: 400px;
+    padding: 15px;
+    overflow-y: auto;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+    color: #0f0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+/* Modal */
+.modal {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    padding: 30px;
+    border-radius: 8px;
+    width: 100%;
+    max-width: 500px;
+    border: 2px solid var(--gold);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.close-modal {
+    cursor: pointer;
+    font-size: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--gold);
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    background: #333;
+    border: 1px solid #444;
+    color: white;
+    border-radius: 4px;
+}
+
+.hidden { display: none !important; }
