@@ -1,15 +1,16 @@
 --[[
-    ⚡ InstaKill Standalone — Boss Only (V4 - ULTIMATE VOID EDITION)
+    ⚡ InstaKill Standalone — Boss Only (V5 - NEXUS LOGIC)
 
-    METODE BARU (PENTING):
-    1. Void Kill: Memindahkan boss langsung ke Void (Y = -5000). Boss mati instan tanpa hit.
-    2. Reward Mode: Gunakan "HitSpam" jika ingin hadiah/XP (Membutuhkan Hit).
-    3. Split UI Pro: UI terpisah antara Setting dan Status Bar (Mini Mode).
-    4. Ability Booster: Skill 2 otomatis terpakai di mode HitSpam.
+    PERBAIKAN V5 (ULTIMATE FIX):
+    1. Smart Remote Finder: Mencari jalur remote secara dinamis (Combat/Ability/Skills).
+    2. Nexus Attack: Mengirimkan berbagai variasi argumen (Boss, Posisi, dan Slot).
+    3. Reward Logic: Mode HitSpam otomatis berhenti di 5% HP untuk mencegah 'Zonk' (Opsional).
+    4. Console Logger: Menampilkan proses penemuan remote di layar (Debug).
+    5. Split UI V2: Status Bar transparan + Draggable Console.
 --]]
 
 -- ══════════════════════════════════════════
---  GUARD
+--  GUARD & SERVICES
 -- ══════════════════════════════════════════
 if getgenv().IK_Running then
     warn("[IK] Script sudah berjalan!")
@@ -17,83 +18,51 @@ if getgenv().IK_Running then
 end
 getgenv().IK_Running = true
 
-repeat task.wait() until game:IsLoaded()
-
--- ══════════════════════════════════════════
---  SERVICES
--- ══════════════════════════════════════════
 local Players    = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UIS        = game:GetService("UserInputService")
 local RS         = game:GetService("ReplicatedStorage")
+local Plr        = Players.LocalPlayer
 
-local Plr       = Players.LocalPlayer
+-- ══════════════════════════════════════════
+--  CLEANUP OLD UI
+-- ══════════════════════════════════════════
+for _, v in pairs({ "IK_BossUI", "IK_BossUI_Fixed", "IK_BossUI_V2", "IK_BossUI_V3", "IK_BossUI_V4", "IK_BossUI_V5" }) do
+    pcall(function() game:GetService("CoreGui"):FindFirstChild(v):Destroy() end)
+    pcall(function() Plr:WaitForChild("PlayerGui"):FindFirstChild(v):Destroy() end)
+end
+
+repeat task.wait() until game:IsLoaded()
 
 -- ══════════════════════════════════════════
 --  CONFIG
 -- ══════════════════════════════════════════
 local Config = {
     Active        = false,
-    Method        = "HitSpam",   -- "HitSpam" (Bisa Reward) atau "VoidKill" (Sangat Cepat)
-    HPTrigger     = 80,          -- Diatur ke 80% default agar player punya kesempatan hit
+    HPTrigger     = 80,
     BossMinHP     = 500000,
-    HitMultiplier = 10,
-    AttackDelay   = 0.05,
+    HitMultiplier = 15,
+    AttackDelay   = 0.03,
+    StopAtHP      = 5, -- Berhenti di 5% agar tidak bug (Opsional)
 }
 
 local State = {
-    Kills         = 0,
     LastAttack    = 0,
     LastScan      = 0,
     ScanDelay     = 0.5,
     CurrentBoss   = nil,
     IKConn        = nil,
-    M1Remote      = nil,
-    AbilityRemote = nil,
+    Remotes       = {}, -- { [Name] = RemoteInstance }
     TargetTags    = {},
-    UI_Mini       = false,
+    Logs          = {},
 }
 
 -- ══════════════════════════════════════════
---  REMOTE DETECTION
--- ══════════════════════════════════════════
-task.spawn(function()
-    while getgenv().IK_Running do
-        if not State.M1Remote then
-            local cs = RS:FindFirstChild("CombatSystem")
-            State.M1Remote = cs and cs:FindFirstChild("Remotes") and cs.Remotes:FindFirstChild("RequestHit")
-        end
-        if not State.AbilityRemote then
-            local ab = RS:FindFirstChild("AbilitySystem")
-            State.AbilityRemote = ab and ab:FindFirstChild("Remotes") and ab.Remotes:FindFirstChild("RequestAbility")
-        end
-        task.wait(2)
-    end
-end)
-
--- ══════════════════════════════════════════
---  GUI SETUP
+--  UI HELPERS
 -- ══════════════════════════════════════════
 local SG = Instance.new("ScreenGui")
-SG.Name           = "IK_BossUI_V4"
-SG.ResetOnSpawn   = false
-SG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-SG.IgnoreGuiInset = true
-SG.DisplayOrder   = 999
-
--- Cleanup
-for _, v in pairs({ "IK_BossUI", "IK_BossUI_Fixed", "IK_BossUI_V2", "IK_BossUI_V3", "IK_BossUI_V4" }) do
-    pcall(function() game:GetService("CoreGui"):FindFirstChild(v):Destroy() end)
-    pcall(function() Plr.PlayerGui:FindFirstChild(v):Destroy() end)
-end
-
-if typeof(gethui) == "function" then
-    SG.Parent = gethui()
-elseif game:GetService("CoreGui"):FindFirstChild("RobloxGui") then
-    SG.Parent = game:GetService("CoreGui")
-else
-    SG.Parent = Plr:WaitForChild("PlayerGui")
-end
+SG.Name = "IK_BossUI_V5"; SG.ResetOnSpawn = false; SG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling; SG.IgnoreGuiInset = true; SG.DisplayOrder = 999
+if typeof(gethui) == "function" then SG.Parent = gethui() else SG.Parent = Plr:WaitForChild("PlayerGui") end
 
 local C = {
     BG     = Color3.fromRGB(12, 12, 18),
@@ -101,131 +70,109 @@ local C = {
     Accent = Color3.fromRGB(88, 101, 242),
     ON     = Color3.fromRGB(46, 204, 113),
     OFF    = Color3.fromRGB(45, 45, 60),
-    Danger = Color3.fromRGB(210, 50, 50),
     Text   = Color3.fromRGB(230, 230, 245),
     Sub    = Color3.fromRGB(130, 130, 160),
-    Input  = Color3.fromRGB(22, 22, 32),
     Border = Color3.fromRGB(35, 35, 50),
 }
 
--- ────────────────────────────────
---  MAIN SETTINGS FRAME
--- ────────────────────────────────
-local Main = Instance.new("Frame")
-Main.Name = "SettingsFrame"
-Main.Size = UDim2.new(0, 210, 0, 310)
-Main.Position = UDim2.new(0.5, -105, 0.2, 0)
-Main.BackgroundColor3 = C.BG; Main.BorderSizePixel = 0
-Main.Parent = SG
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", Main).Color = C.Border
+-- Console Logger UI
+local Console = Instance.new("Frame")
+Console.Size = UDim2.new(0, 220, 0, 120); Console.Position = UDim2.new(0, 10, 1, -130); Console.BackgroundColor3 = Color3.new(0,0,0); Console.BackgroundTransparency = 0.5; Console.Parent = SG
+Instance.new("UICorner", Console).CornerRadius = UDim.new(0, 6); Instance.new("UIStroke", Console).Color = C.Border
 
--- Header
-local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, 30)
-Header.BackgroundColor3 = C.Header; Header.BorderSizePixel = 0; Header.Parent = Main
-Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 8)
+local LogList = Instance.new("ScrollingFrame")
+LogList.Size = UDim2.new(1, -10, 1, -10); LogList.Position = UDim2.new(0, 5, 0, 5); LogList.BackgroundTransparency = 1; LogList.ScrollBarThickness = 2; LogList.Parent = Console
+local LogLayout = Instance.new("UIListLayout", LogList); LogLayout.SortOrder = Enum.SortOrder.LayoutOrder
 
-local TLbl = Instance.new("TextLabel")
-TLbl.Text = "⚡ InstaKill V4 - Ultimate"
-TLbl.Size = UDim2.new(1, -60, 1, 0); TLbl.Position = UDim2.new(0, 10, 0, 0)
-TLbl.BackgroundTransparency = 1; TLbl.TextColor3 = C.Text; TLbl.Font = Enum.Font.GothamBold; TLbl.TextSize = 11; TLbl.TextXAlignment = Enum.TextXAlignment.Left; TLbl.Parent = Header
-
-local CloseBtn = Instance.new("TextButton")
-CloseBtn.Text = "✕"; CloseBtn.Size = UDim2.new(0, 24, 0, 20); CloseBtn.Position = UDim2.new(1, -27, 0.5, -10)
-CloseBtn.BackgroundColor3 = C.Danger; CloseBtn.TextColor3 = Color3.new(1,1,1); CloseBtn.Font = Enum.Font.GothamBold; CloseBtn.Parent = Header
-Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 5)
-
-local Cont = Instance.new("Frame")
-Cont.Size = UDim2.new(1, 0, 1, -30); Cont.Position = UDim2.new(0, 0, 0, 30); Cont.BackgroundTransparency = 1; Cont.Parent = Main
-local ULL = Instance.new("UIListLayout", Cont); ULL.Padding = UDim.new(0, 5); ULL.HorizontalAlignment = Enum.HorizontalAlignment.Center
-local UPad = Instance.new("UIPadding", Cont); UPad.PaddingTop = UDim.new(0, 8); UPad.PaddingLeft = UDim.new(0, 10); UPad.PaddingRight = UDim.new(0, 10)
-
--- UI Rows
-local function CreateRow(lbl, configKey, ph, order)
-    local f = Instance.new("Frame"); f.Size = UDim2.new(1, 0, 0, 26); f.BackgroundTransparency = 1; f.LayoutOrder = order; f.Parent = Cont
-    local l = Instance.new("TextLabel"); l.Text = lbl; l.Size = UDim2.new(0.5, 0, 1, 0); l.BackgroundTransparency = 1; l.TextColor3 = C.Sub; l.TextSize = 10; l.Font = Enum.Font.Gotham; l.TextXAlignment = Enum.TextXAlignment.Left; l.Parent = f
-    local b = Instance.new("TextBox"); b.Text = tostring(Config[configKey]); b.PlaceholderText = ph; b.Size = UDim2.new(0.45, 0, 0, 20); b.Position = UDim2.new(0.55, 0, 0, 3); b.BackgroundColor3 = C.Input; b.TextColor3 = Color3.fromRGB(255, 210, 80); b.Font = Enum.Font.GothamBold; b.TextSize = 10; b.BorderSizePixel = 0; b.Parent = f
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 5)
-    b.FocusLost:Connect(function() local v = tonumber(b.Text); if v then Config[configKey] = v end; b.Text = tostring(Config[configKey]) end)
+local function Log(msg, col)
+    local l = Instance.new("TextLabel")
+    l.Text = "> " .. msg; l.Size = UDim2.new(1, 0, 0, 15); l.BackgroundTransparency = 1; l.TextColor3 = col or C.Text; l.TextSize = 9; l.Font = Enum.Font.Code; l.TextXAlignment = Enum.TextXAlignment.Left; l.Parent = LogList
+    LogList.CanvasSize = UDim2.new(0, 0, 0, LogLayout.AbsoluteContentSize.Y)
+    LogList.CanvasPosition = Vector2.new(0, LogList.CanvasSize.Y.Offset)
+    if #LogList:GetChildren() > 20 then LogList:GetChildren()[2]:Destroy() end
 end
 
--- Toggles
-local IKBtn = Instance.new("TextButton")
-IKBtn.Text = "SYSTEM OFF"; IKBtn.Size = UDim2.new(1, 0, 0, 32); IKBtn.BackgroundColor3 = C.OFF; IKBtn.TextColor3 = C.Sub; IKBtn.Font = Enum.Font.GothamBold; IKBtn.TextSize = 11; IKBtn.Parent = Cont
-Instance.new("UICorner", IKBtn).CornerRadius = UDim.new(0, 6)
-
--- Method Selector
-local MethodBtn = Instance.new("TextButton")
-MethodBtn.Text = "MODE: HitSpam (Reward)"; MethodBtn.Size = UDim2.new(1, 0, 0, 26); MethodBtn.BackgroundColor3 = C.Accent; MethodBtn.TextColor3 = Color3.new(1,1,1); MethodBtn.Font = Enum.Font.GothamBold; MethodBtn.TextSize = 10; MethodBtn.Parent = Cont
-Instance.new("UICorner", MethodBtn).CornerRadius = UDim.new(0, 5)
-
-MethodBtn.MouseButton1Click:Connect(function()
-    if Config.Method == "HitSpam" then
-        Config.Method = "VoidKill"
-        MethodBtn.Text = "MODE: VoidKill (Instan)"
-        MethodBtn.BackgroundColor3 = C.Danger
-    else
-        Config.Method = "HitSpam"
-        MethodBtn.Text = "MODE: HitSpam (Reward)"
-        MethodBtn.BackgroundColor3 = C.Accent
-    end
-end)
-
-CreateRow("HP Trigger %", "HPTrigger", "1-100", 1)
-CreateRow("Boss MinHP", "BossMinHP", "HP", 2)
-CreateRow("Hit Multiplier", "HitMultiplier", "Loop", 3)
-
-local DescLbl = Instance.new("TextLabel")
-DescLbl.Text = "VoidKill: Boss mati instan tapi pemain tidak dapat hadiah.\nHitSpam: Menyerang boss sampai mati (Bisa dapat hadiah)."; DescLbl.Size = UDim2.new(1, 0, 0, 45); DescLbl.BackgroundTransparency = 1; DescLbl.TextColor3 = C.Sub; DescLbl.TextSize = 8; DescLbl.Font = Enum.Font.Gotham; DescLbl.TextWrapped = true; DescLbl.Parent = Cont
-
--- ────────────────────────────────
---  SPLIT STATUS BAR (MINI MODE)
--- ────────────────────────────────
-local MiniFrame = Instance.new("Frame")
-MiniFrame.Name = "MiniStatusBar"
-MiniFrame.Size = UDim2.new(0, 180, 0, 35)
-MiniFrame.Position = UDim2.new(1, -190, 0.8, 0)
-MiniFrame.BackgroundColor3 = C.Input; MiniFrame.BorderSizePixel = 0; MiniFrame.Parent = SG
-Instance.new("UICorner", MiniFrame).CornerRadius = UDim.new(0, 8)
-Instance.new("UIStroke", MiniFrame).Color = C.Accent
+-- Mini Status Bar
+local Mini = Instance.new("Frame")
+Mini.Size = UDim2.new(0, 180, 0, 40); Mini.Position = UDim2.new(0.5, -90, 0.05, 0); Mini.BackgroundColor3 = C.BG; Mini.Parent = SG
+Instance.new("UICorner", Mini).CornerRadius = UDim.new(0, 8); Instance.new("UIStroke", Mini).Color = C.Accent
 
 local StatLbl = Instance.new("TextLabel")
-StatLbl.Size = UDim2.new(1, -10, 1, 0); StatLbl.Position = UDim2.new(0, 5, 0, 0)
-StatLbl.Text = "⬡ Idle"; StatLbl.BackgroundTransparency = 1; StatLbl.TextColor3 = C.Sub; StatLbl.TextSize = 9; StatLbl.Font = Enum.Font.Gotham; StatLbl.Parent = MiniFrame
+StatLbl.Size = UDim2.new(1, 0, 1, 0); StatLbl.Text = "Nexus System Scanning..."; StatLbl.BackgroundTransparency = 1; StatLbl.TextColor3 = C.Text; StatLbl.Font = Enum.Font.GothamBold; StatLbl.TextSize = 10; StatLbl.Parent = Mini
 
-local MiniToggle = Instance.new("TextButton")
-MiniToggle.Text = "❐ Settings"; MiniToggle.Size = UDim2.new(1, 0, 0, 20); MiniToggle.Position = UDim2.new(0, 0, -1, -5)
-MiniToggle.BackgroundColor3 = C.Header; MiniToggle.TextColor3 = C.Text; MiniToggle.Font = Enum.Font.GothamBold; MiniToggle.TextSize = 10; MiniToggle.Parent = MiniFrame
-Instance.new("UICorner", MiniToggle).CornerRadius = UDim.new(0, 5)
+-- Settings Button
+local SetBtn = Instance.new("TextButton")
+SetBtn.Text = "⚙️"; SetBtn.Size = UDim2.new(0, 25, 0, 25); SetBtn.Position = UDim2.new(1, 5, 0, 0); SetBtn.BackgroundColor3 = C.Header; SetBtn.TextColor3 = C.Text; SetBtn.Parent = Mini
+Instance.new("UICorner", SetBtn).CornerRadius = UDim.new(0, 5)
 
-MiniToggle.MouseButton1Click:Connect(function()
-    Main.Visible = not Main.Visible
-end)
+-- Main Frame (Hidden by Default)
+local Main = Instance.new("Frame")
+Main.Size = UDim2.new(0, 200, 0, 180); Main.Position = UDim2.new(0.5, -100, 0.2, 0); Main.BackgroundColor3 = C.BG; Main.Visible = false; Main.Parent = SG
+Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8); Instance.new("UIStroke", Main).Color = C.Border
 
--- ══════════════════════════════════════════
---  UI LOGIC
--- ══════════════════════════════════════════
-IKBtn.MouseButton1Click:Connect(function()
-    Config.Active = not Config.Active
-    IKBtn.Text = Config.Active and "SYSTEM ON" or "SYSTEM OFF"
-    IKBtn.BackgroundColor3 = Config.Active and C.ON or C.OFF
-    IKBtn.TextColor3 = Config.Active and Color3.new(1,1,1) or C.Sub
-end)
+local MList = Instance.new("Frame"); MList.Size = UDim2.new(1, -20, 1, -20); MList.Position = UDim2.new(0, 10, 0, 10); MList.BackgroundTransparency = 1; MList.Parent = Main
+local MULL = Instance.new("UIListLayout", MList); MULL.Padding = UDim.new(0, 5)
 
-CloseBtn.MouseButton1Click:Connect(function()
-    getgenv().IK_Running = false
-    if State.IKConn then State.IKConn:Disconnect() end
-    SG:Destroy()
-end)
-
--- Drag logic for Settings & Mini Frame
-local function MakeDraggable(f)
-    local drag, dStart, sPos
-    f.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then drag = true; dStart = i.Position; sPos = f.Position; i.Changed:Connect(function() if i.UserInputState == Enum.UserInputState.End then drag = false end end) end end)
-    UIS.InputChanged:Connect(function(i) if drag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local delta = i.Position - dStart; f.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + delta.X, sPos.Y.Scale, sPos.Y.Offset + delta.Y) end end)
+local function MkBtn(txt, callback)
+    local b = Instance.new("TextButton"); b.Text = txt; b.Size = UDim2.new(1, 0, 0, 30); b.BackgroundColor3 = C.OFF; b.TextColor3 = C.Text; b.Font = Enum.Font.GothamBold; b.TextSize = 11; b.Parent = MList
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 6)
+    b.MouseButton1Click:Connect(function() callback(b) end)
+    return b
 end
-MakeDraggable(Main); MakeDraggable(MiniFrame)
+
+local function MkInput(lbl, key)
+    local f = Instance.new("Frame"); f.Size = UDim2.new(1, 0, 0, 25); f.BackgroundTransparency = 1; f.Parent = MList
+    local l = Instance.new("TextLabel"); l.Text = lbl; l.Size = UDim2.new(0.6, 0, 1, 0); l.BackgroundTransparency = 1; l.TextColor3 = C.Sub; l.TextSize = 10; l.Font = Enum.Font.Gotham; l.TextXAlignment = Enum.TextXAlignment.Left; l.Parent = f
+    local i = Instance.new("TextBox"); i.Text = tostring(Config[key]); i.Size = UDim2.new(0.35, 0, 0, 20); i.Position = UDim2.new(0.65, 0, 0, 2); i.BackgroundColor3 = Color3.new(0,0,0); i.TextColor3 = Color3.new(1,1,1); i.Font = Enum.Font.GothamBold; i.TextSize = 10; i.Parent = f
+    Instance.new("UICorner", i).CornerRadius = UDim.new(0, 5)
+    i.FocusLost:Connect(function() Config[key] = tonumber(i.Text) or Config[key]; i.Text = tostring(Config[key]) end)
+end
+
+local SystemBtn = MkBtn("SYSTEM: OFF", function(b)
+    Config.Active = not Config.Active
+    b.Text = Config.Active and "SYSTEM: ON" or "SYSTEM: OFF"
+    b.BackgroundColor3 = Config.Active and C.ON or C.OFF
+end)
+
+MkInput("HP Trigger %", "HPTrigger")
+MkInput("Hit Multiplier", "HitMultiplier")
+
+SetBtn.MouseButton1Click:Connect(function() Main.Visible = not Main.Visible end)
+
+-- Drag Logic
+local function Draggable(f)
+    local d, s, p; f.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then d = true; s = i.Position; p = f.Position; i.Changed:Connect(function() if i.UserInputState == Enum.UserInputState.End then d = false end end) end end)
+    UIS.InputChanged:Connect(function(i) if d and i.UserInputType == Enum.UserInputType.MouseMovement then local delta = i.Position - s; f.Position = UDim2.new(p.X.Scale, p.X.Offset + delta.X, p.Y.Scale, p.Y.Offset + delta.Y) end end)
+end
+Draggable(Mini); Draggable(Main); Draggable(Console)
+
+-- ══════════════════════════════════════════
+--  SMART REMOTE FINDER
+-- ══════════════════════════════════════════
+local function ScanRemotes()
+    State.Remotes = {}
+    Log("Mencari Nexus Remotes...", Color3.new(1, 1, 0))
+
+    local paths = { RS:FindFirstChild("CombatSystem"), RS:FindFirstChild("AbilitySystem"), RS }
+    local targets = { "RequestHit", "RequestAbility", "Damage", "Attack", "Skill", "UseAbility" }
+
+    for _, p in pairs(paths) do
+        if p then
+            for _, v in pairs(p:GetDescendants()) do
+                if v:IsA("RemoteEvent") or v:IsA("RemoteFunction") then
+                    for _, t in pairs(targets) do
+                        if v.Name:find(t) then
+                            State.Remotes[v.Name] = v
+                            Log("Found: " .. v.Name, Color3.new(0, 1, 0))
+                        end
+                    end
+                end
+            end
+        end
+    end
+    if not next(State.Remotes) then Log("Warning: No Remotes Found!", Color3.new(1, 0, 0)) end
+end
+task.spawn(ScanRemotes)
 
 -- ══════════════════════════════════════════
 --  CORE LOGIC
@@ -249,10 +196,9 @@ local function GetBestBoss()
     return best
 end
 
--- Main Loop
 State.IKConn = RunService.Heartbeat:Connect(function()
     if not Config.Active then
-        StatLbl.Text = "⬡ System Idle"; StatLbl.TextColor3 = C.Sub
+        StatLbl.Text = "Nexus System: Ready"; StatLbl.TextColor3 = C.Sub
         return
     end
 
@@ -262,36 +208,52 @@ State.IKConn = RunService.Heartbeat:Connect(function()
     end
 
     local boss = State.CurrentBoss
-    if not boss or not boss:FindFirstChild("HumanoidRootPart") or boss:FindFirstChildOfClass("Humanoid").Health <= 0 then
-        State.CurrentBoss = nil; StatLbl.Text = "⬡ Scanning Boss..."; StatLbl.TextColor3 = C.Warn
+    if not boss or not boss:FindFirstChild("HumanoidRootPart") then
+        State.CurrentBoss = nil; StatLbl.Text = "Searching Boss..."; StatLbl.TextColor3 = Color3.new(1, 0.5, 0)
         return
     end
 
     local bHum = boss:FindFirstChildOfClass("Humanoid")
     local bRoot = boss:FindFirstChild("HumanoidRootPart")
-    local hpPct = (bHum.Health / bHum.MaxHealth) * 100
+    if not bHum or bHum.Health <= 0 then return end
 
-    StatLbl.Text = string.format("⚡ [%s] %s: %.1f%%", Config.Method, boss.Name:sub(1,8), hpPct)
+    local hpPct = (bHum.Health / bHum.MaxHealth) * 100
+    StatLbl.Text = string.format("%s: %.1f%%", boss.Name:sub(1,10), hpPct)
     StatLbl.TextColor3 = C.ON
 
+    -- STOP LOGIC: Berhenti jika terlalu rendah agar tidak error/kick
+    if hpPct <= Config.StopAtHP then return end
+
     if hpPct <= Config.HPTrigger then
-        if Config.Method == "VoidKill" then
-            -- METODE VOID: Sangat cepat, tapi server mungkin tidak mencatat reward
-            pcall(function()
-                bRoot.CFrame = CFrame.new(bRoot.Position.X, -5000, bRoot.Position.Z)
-            end)
-        else
-            -- METODE HITSPAM: Menyerang lewat Remote agar server menganggap kamu pembunuhnya (Dapat Reward)
-            if os.clock() - State.LastAttack >= Config.AttackDelay then
-                local targetPos = bRoot.Position
-                for i = 1, Config.HitMultiplier do
-                    if State.AbilityRemote then pcall(function() State.AbilityRemote:FireServer(2) end) end
-                    if State.M1Remote then pcall(function() State.M1Remote:FireServer(targetPos) end) end
+        if os.clock() - State.LastAttack >= Config.AttackDelay then
+            local pos = bRoot.Position
+
+            for i = 1, Config.HitMultiplier do
+                -- Pattern 1: Ability Spam (Based on User Log)
+                if State.Remotes["RequestAbility"] then
+                    pcall(function() State.Remotes["RequestAbility"]:FireServer(2) end)
                 end
-                State.LastAttack = os.clock()
+
+                -- Pattern 2: Multi-Argument Hit (Mencoba menebak format argumen server)
+                if State.Remotes["RequestHit"] then
+                    local r = State.Remotes["RequestHit"]
+                    pcall(function() r:FireServer(pos) end) -- Vector3
+                    pcall(function() r:FireServer(boss) end) -- Instance
+                    pcall(function() r:FireServer(boss, pos) end) -- Mixed
+                end
+
+                -- Pattern 3: Dynamic Skill Fire
+                for name, remote in pairs(State.Remotes) do
+                    if name:find("Skill") or name:find("Attack") then
+                        pcall(function() remote:FireServer(pos) end)
+                    end
+                end
             end
+            State.LastAttack = os.clock()
         end
     end
 end)
 
-print("[IK] V4 Ultimate Void Edition Loaded!")
+Log("V5 Nexus Logic Loaded.", C.ON)
+Log("Auto-Scanner Active.", C.ON)
+Log("Ability Slot 2 Prioritized.", C.Accent)
