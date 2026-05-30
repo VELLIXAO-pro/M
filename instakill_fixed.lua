@@ -8,6 +8,7 @@
     4. UI State Fix: Settings di UI sekarang tersimpan dan terupdate dengan benar.
     5. Feature Restore: Kill Counter dikembalikan.
     6. UI Cleanup: Menghapus versi UI lama (V1) dan baru (V2).
+    7. Stealth Fix: Menghapus fitur Snap/Teleport agar tidak terlihat mencurigakan.
 --]]
 
 -- ══════════════════════════════════════════
@@ -40,7 +41,6 @@ local Config = {
     BossMinHP     = 500000,
     M1Delay       = 0.05,
     HitMultiplier = 5,
-    SnapRange     = 5,
 }
 
 local State = {
@@ -358,15 +358,7 @@ State.IKConn = RunService.Heartbeat:Connect(function()
         -- Tag for Kill Counter
         State.TargetTags[boss] = true
 
-        -- Snap Logic
-        local dist = (root.Position - bRoot.Position).Magnitude
-        if dist > Config.SnapRange then
-            pcall(function()
-                root.CFrame = bRoot.CFrame * CFrame.new(0, 0, Config.SnapRange)
-            end)
-        end
-
-        -- Attack Logic
+        -- Attack Logic (Snap Removed for Stealth)
         if os.clock() - State.LastM1 >= Config.M1Delay then
             local targetPos = bRoot.Position
             for i = 1, Config.HitMultiplier do
@@ -377,4 +369,4 @@ State.IKConn = RunService.Heartbeat:Connect(function()
     end
 end)
 
-print("[IK] Script V2 (Optimized) Loaded!")
+print("[IK] Script V2 (Optimized & Stealth) Loaded!")
