@@ -1,12 +1,11 @@
 --[[
-    ⚡ InstaKill Standalone — Boss Only (V3 - PRO OPTIMIZED)
+    ⚡ InstaKill Standalone — Boss Only (V4 - ULTIMATE VOID EDITION)
 
-    PERBAIKAN & FITUR BARU:
-    1. Ability Spam: Menggunakan RequestAbility (Slot 2) untuk damage masif.
-    2. Split UI: Mode "Mini" agar tidak mengganggu pandangan.
-    3. No-Proximity: Menembak langsung ke koordinat boss (Stealth & Zero Involvement).
-    4. Multi-Remote: Mendukung M1 dan Ability System.
-    5. UI Cleanup: Menghapus versi UI lama.
+    METODE BARU (PENTING):
+    1. Void Kill: Memindahkan boss langsung ke Void (Y = -5000). Boss mati instan tanpa hit.
+    2. Reward Mode: Gunakan "HitSpam" jika ingin hadiah/XP (Membutuhkan Hit).
+    3. Split UI Pro: UI terpisah antara Setting dan Status Bar (Mini Mode).
+    4. Ability Booster: Skill 2 otomatis terpakai di mode HitSpam.
 --]]
 
 -- ══════════════════════════════════════════
@@ -35,12 +34,11 @@ local Plr       = Players.LocalPlayer
 -- ══════════════════════════════════════════
 local Config = {
     Active        = false,
-    HPTrigger     = 100,
+    Method        = "HitSpam",   -- "HitSpam" (Bisa Reward) atau "VoidKill" (Sangat Cepat)
+    HPTrigger     = 80,          -- Diatur ke 80% default agar player punya kesempatan hit
     BossMinHP     = 500000,
-    AttackDelay   = 0.05,
     HitMultiplier = 10,
-    UseAbility    = true, -- Pakai Skill 2 untuk InstaKill masif
-    UseM1         = true,
+    AttackDelay   = 0.05,
 }
 
 local State = {
@@ -53,7 +51,7 @@ local State = {
     M1Remote      = nil,
     AbilityRemote = nil,
     TargetTags    = {},
-    IsMini        = false,
+    UI_Mini       = false,
 }
 
 -- ══════════════════════════════════════════
@@ -61,12 +59,10 @@ local State = {
 -- ══════════════════════════════════════════
 task.spawn(function()
     while getgenv().IK_Running do
-        -- M1 Remote
         if not State.M1Remote then
             local cs = RS:FindFirstChild("CombatSystem")
             State.M1Remote = cs and cs:FindFirstChild("Remotes") and cs.Remotes:FindFirstChild("RequestHit")
         end
-        -- Ability Remote
         if not State.AbilityRemote then
             local ab = RS:FindFirstChild("AbilitySystem")
             State.AbilityRemote = ab and ab:FindFirstChild("Remotes") and ab.Remotes:FindFirstChild("RequestAbility")
@@ -79,14 +75,14 @@ end)
 --  GUI SETUP
 -- ══════════════════════════════════════════
 local SG = Instance.new("ScreenGui")
-SG.Name           = "IK_BossUI_V3"
+SG.Name           = "IK_BossUI_V4"
 SG.ResetOnSpawn   = false
 SG.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 SG.IgnoreGuiInset = true
 SG.DisplayOrder   = 999
 
 -- Cleanup
-for _, v in pairs({ "IK_BossUI", "IK_BossUI_Fixed", "IK_BossUI_V2", "IK_BossUI_V3" }) do
+for _, v in pairs({ "IK_BossUI", "IK_BossUI_Fixed", "IK_BossUI_V2", "IK_BossUI_V3", "IK_BossUI_V4" }) do
     pcall(function() game:GetService("CoreGui"):FindFirstChild(v):Destroy() end)
     pcall(function() Plr.PlayerGui:FindFirstChild(v):Destroy() end)
 end
@@ -112,121 +108,100 @@ local C = {
     Border = Color3.fromRGB(35, 35, 50),
 }
 
-local W, H, HDR = 210, 280, 30
-
+-- ────────────────────────────────
+--  MAIN SETTINGS FRAME
+-- ────────────────────────────────
 local Main = Instance.new("Frame")
-Main.Size = UDim2.new(0, W, 0, H)
-Main.Position = UDim2.new(0.5, -W/2, 0.15, 0)
-Main.BackgroundColor3 = C.BG
-Main.BorderSizePixel = 0
-Main.ClipsDescendants = true
+Main.Name = "SettingsFrame"
+Main.Size = UDim2.new(0, 210, 0, 310)
+Main.Position = UDim2.new(0.5, -105, 0.2, 0)
+Main.BackgroundColor3 = C.BG; Main.BorderSizePixel = 0
 Main.Parent = SG
 Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 8)
 Instance.new("UIStroke", Main).Color = C.Border
 
 -- Header
 local Header = Instance.new("Frame")
-Header.Size = UDim2.new(1, 0, 0, HDR)
-Header.BackgroundColor3 = C.Header
-Header.BorderSizePixel = 0
-Header.Parent = Main
+Header.Size = UDim2.new(1, 0, 0, 30)
+Header.BackgroundColor3 = C.Header; Header.BorderSizePixel = 0; Header.Parent = Main
 Instance.new("UICorner", Header).CornerRadius = UDim.new(0, 8)
 
 local TLbl = Instance.new("TextLabel")
-TLbl.Text = "⚡ InstaKill V3"
-TLbl.Size = UDim2.new(1, -80, 1, 0)
-TLbl.Position = UDim2.new(0, 10, 0, 0)
-TLbl.BackgroundTransparency = 1; TLbl.TextColor3 = C.Text
-TLbl.Font = Enum.Font.GothamBold; TLbl.TextSize = 11
-TLbl.TextXAlignment = Enum.TextXAlignment.Left; TLbl.Parent = Header
-
--- Split/Mini Button
-local MiniBtn = Instance.new("TextButton")
-MiniBtn.Text = "❐"; MiniBtn.Size = UDim2.new(0, 24, 0, 20)
-MiniBtn.Position = UDim2.new(1, -54, 0.5, -10)
-MiniBtn.BackgroundColor3 = C.OFF; MiniBtn.TextColor3 = C.Text
-MiniBtn.Font = Enum.Font.GothamBold; MiniBtn.Parent = Header
-Instance.new("UICorner", MiniBtn).CornerRadius = UDim.new(0, 5)
+TLbl.Text = "⚡ InstaKill V4 - Ultimate"
+TLbl.Size = UDim2.new(1, -60, 1, 0); TLbl.Position = UDim2.new(0, 10, 0, 0)
+TLbl.BackgroundTransparency = 1; TLbl.TextColor3 = C.Text; TLbl.Font = Enum.Font.GothamBold; TLbl.TextSize = 11; TLbl.TextXAlignment = Enum.TextXAlignment.Left; TLbl.Parent = Header
 
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Text = "✕"; CloseBtn.Size = UDim2.new(0, 24, 0, 20)
-CloseBtn.Position = UDim2.new(1, -27, 0.5, -10)
-CloseBtn.BackgroundColor3 = C.Danger; CloseBtn.TextColor3 = Color3.new(1,1,1)
-CloseBtn.Font = Enum.Font.GothamBold; CloseBtn.Parent = Header
+CloseBtn.Text = "✕"; CloseBtn.Size = UDim2.new(0, 24, 0, 20); CloseBtn.Position = UDim2.new(1, -27, 0.5, -10)
+CloseBtn.BackgroundColor3 = C.Danger; CloseBtn.TextColor3 = Color3.new(1,1,1); CloseBtn.Font = Enum.Font.GothamBold; CloseBtn.Parent = Header
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 5)
 
--- Content
 local Cont = Instance.new("Frame")
-Cont.Size = UDim2.new(1, 0, 1, -HDR); Cont.Position = UDim2.new(0, 0, 0, HDR)
-Cont.BackgroundTransparency = 1; Cont.Parent = Main
-local ULL = Instance.new("UIListLayout", Cont)
-ULL.Padding = UDim.new(0, 5); ULL.HorizontalAlignment = Enum.HorizontalAlignment.Center
-local UPad = Instance.new("UIPadding", Cont)
-UPad.PaddingTop = UDim.new(0, 8); UPad.PaddingLeft = UDim.new(0, 10); UPad.PaddingRight = UDim.new(0, 10)
+Cont.Size = UDim2.new(1, 0, 1, -30); Cont.Position = UDim2.new(0, 0, 0, 30); Cont.BackgroundTransparency = 1; Cont.Parent = Main
+local ULL = Instance.new("UIListLayout", Cont); ULL.Padding = UDim.new(0, 5); ULL.HorizontalAlignment = Enum.HorizontalAlignment.Center
+local UPad = Instance.new("UIPadding", Cont); UPad.PaddingTop = UDim.new(0, 8); UPad.PaddingLeft = UDim.new(0, 10); UPad.PaddingRight = UDim.new(0, 10)
 
--- Toggle Ability & M1
-local function MkToggle(lbl, key, order)
-    local f = Instance.new("Frame")
-    f.Size = UDim2.new(1, 0, 0, 26); f.BackgroundTransparency = 1; f.LayoutOrder = order; f.Parent = Cont
-    local l = Instance.new("TextLabel")
-    l.Text = lbl; l.Size = UDim2.new(0.6, 0, 1, 0); l.BackgroundTransparency = 1
-    l.TextColor3 = C.Sub; l.TextSize = 10; l.Font = Enum.Font.Gotham; l.TextXAlignment = Enum.TextXAlignment.Left; l.Parent = f
-    local b = Instance.new("TextButton")
-    b.Text = Config[key] and "ON" or "OFF"; b.Size = UDim2.new(0.35, 0, 0, 20); b.Position = UDim2.new(0.65, 0, 0, 3)
-    b.BackgroundColor3 = Config[key] and C.ON or C.OFF; b.TextColor3 = Color3.new(1,1,1); b.Font = Enum.Font.GothamBold; b.TextSize = 10; b.Parent = f
+-- UI Rows
+local function CreateRow(lbl, configKey, ph, order)
+    local f = Instance.new("Frame"); f.Size = UDim2.new(1, 0, 0, 26); f.BackgroundTransparency = 1; f.LayoutOrder = order; f.Parent = Cont
+    local l = Instance.new("TextLabel"); l.Text = lbl; l.Size = UDim2.new(0.5, 0, 1, 0); l.BackgroundTransparency = 1; l.TextColor3 = C.Sub; l.TextSize = 10; l.Font = Enum.Font.Gotham; l.TextXAlignment = Enum.TextXAlignment.Left; l.Parent = f
+    local b = Instance.new("TextBox"); b.Text = tostring(Config[configKey]); b.PlaceholderText = ph; b.Size = UDim2.new(0.45, 0, 0, 20); b.Position = UDim2.new(0.55, 0, 0, 3); b.BackgroundColor3 = C.Input; b.TextColor3 = Color3.fromRGB(255, 210, 80); b.Font = Enum.Font.GothamBold; b.TextSize = 10; b.BorderSizePixel = 0; b.Parent = f
     Instance.new("UICorner", b).CornerRadius = UDim.new(0, 5)
-    b.MouseButton1Click:Connect(function()
-        Config[key] = not Config[key]
-        b.Text = Config[key] and "ON" or "OFF"
-        b.BackgroundColor3 = Config[key] and C.ON or C.OFF
-    end)
-end
-
--- UI Row for Config
-local function MkRow(lbl, key, ph, order)
-    local f = Instance.new("Frame")
-    f.Size = UDim2.new(1, 0, 0, 26); f.BackgroundTransparency = 1; f.LayoutOrder = order; f.Parent = Cont
-    local l = Instance.new("TextLabel")
-    l.Text = lbl; l.Size = UDim2.new(0.5, 0, 1, 0); l.BackgroundTransparency = 1
-    l.TextColor3 = C.Sub; l.TextSize = 10; l.Font = Enum.Font.Gotham; l.TextXAlignment = Enum.TextXAlignment.Left; l.Parent = f
-    local b = Instance.new("TextBox")
-    b.Text = tostring(Config[key]); b.PlaceholderText = ph; b.Size = UDim2.new(0.45, 0, 0, 20)
-    b.Position = UDim2.new(0.55, 0, 0, 3); b.BackgroundColor3 = C.Input; b.TextColor3 = Color3.fromRGB(255, 210, 80)
-    b.Font = Enum.Font.GothamBold; b.TextSize = 10; b.BorderSizePixel = 0; b.Parent = f
-    Instance.new("UICorner", b).CornerRadius = UDim.new(0, 5)
-    b.FocusLost:Connect(function()
-        local v = tonumber(b.Text)
-        if v then Config[key] = v end
-        b.Text = tostring(Config[key])
-    end)
+    b.FocusLost:Connect(function() local v = tonumber(b.Text); if v then Config[configKey] = v end; b.Text = tostring(Config[configKey]) end)
 end
 
 -- Toggles
 local IKBtn = Instance.new("TextButton")
-IKBtn.Text = "SYSTEM OFF"; IKBtn.Size = UDim2.new(1, 0, 0, 32); IKBtn.LayoutOrder = 0
-IKBtn.BackgroundColor3 = C.OFF; IKBtn.TextColor3 = C.Sub; IKBtn.Font = Enum.Font.GothamBold; IKBtn.TextSize = 11; IKBtn.Parent = Cont
+IKBtn.Text = "SYSTEM OFF"; IKBtn.Size = UDim2.new(1, 0, 0, 32); IKBtn.BackgroundColor3 = C.OFF; IKBtn.TextColor3 = C.Sub; IKBtn.Font = Enum.Font.GothamBold; IKBtn.TextSize = 11; IKBtn.Parent = Cont
 Instance.new("UICorner", IKBtn).CornerRadius = UDim.new(0, 6)
 
-MkToggle("Spam Ability (Slot 2)", "UseAbility", 1)
-MkToggle("Spam M1 Click", "UseM1", 2)
-MkRow("HP Trigger %", "HPTrigger", "1-100", 3)
-MkRow("Boss MinHP", "BossMinHP", "HP", 4)
-MkRow("Hit Multiplier", "HitMultiplier", "1-100", 5)
+-- Method Selector
+local MethodBtn = Instance.new("TextButton")
+MethodBtn.Text = "MODE: HitSpam (Reward)"; MethodBtn.Size = UDim2.new(1, 0, 0, 26); MethodBtn.BackgroundColor3 = C.Accent; MethodBtn.TextColor3 = Color3.new(1,1,1); MethodBtn.Font = Enum.Font.GothamBold; MethodBtn.TextSize = 10; MethodBtn.Parent = Cont
+Instance.new("UICorner", MethodBtn).CornerRadius = UDim.new(0, 5)
 
--- Status bar
-local SF = Instance.new("Frame")
-SF.Size = UDim2.new(1,0,0,32); SF.BackgroundColor3 = C.Input; SF.LayoutOrder = 6; SF.Parent = Cont
-Instance.new("UICorner", SF).CornerRadius = UDim.new(0,6)
+MethodBtn.MouseButton1Click:Connect(function()
+    if Config.Method == "HitSpam" then
+        Config.Method = "VoidKill"
+        MethodBtn.Text = "MODE: VoidKill (Instan)"
+        MethodBtn.BackgroundColor3 = C.Danger
+    else
+        Config.Method = "HitSpam"
+        MethodBtn.Text = "MODE: HitSpam (Reward)"
+        MethodBtn.BackgroundColor3 = C.Accent
+    end
+end)
+
+CreateRow("HP Trigger %", "HPTrigger", "1-100", 1)
+CreateRow("Boss MinHP", "BossMinHP", "HP", 2)
+CreateRow("Hit Multiplier", "HitMultiplier", "Loop", 3)
+
+local DescLbl = Instance.new("TextLabel")
+DescLbl.Text = "VoidKill: Boss mati instan tapi pemain tidak dapat hadiah.\nHitSpam: Menyerang boss sampai mati (Bisa dapat hadiah)."; DescLbl.Size = UDim2.new(1, 0, 0, 45); DescLbl.BackgroundTransparency = 1; DescLbl.TextColor3 = C.Sub; DescLbl.TextSize = 8; DescLbl.Font = Enum.Font.Gotham; DescLbl.TextWrapped = true; DescLbl.Parent = Cont
+
+-- ────────────────────────────────
+--  SPLIT STATUS BAR (MINI MODE)
+-- ────────────────────────────────
+local MiniFrame = Instance.new("Frame")
+MiniFrame.Name = "MiniStatusBar"
+MiniFrame.Size = UDim2.new(0, 180, 0, 35)
+MiniFrame.Position = UDim2.new(1, -190, 0.8, 0)
+MiniFrame.BackgroundColor3 = C.Input; MiniFrame.BorderSizePixel = 0; MiniFrame.Parent = SG
+Instance.new("UICorner", MiniFrame).CornerRadius = UDim.new(0, 8)
+Instance.new("UIStroke", MiniFrame).Color = C.Accent
 
 local StatLbl = Instance.new("TextLabel")
-StatLbl.Size = UDim2.new(1,-60,1,0); StatLbl.Position = UDim2.new(0,8,0,0)
-StatLbl.Text = "⬡ System Idle"; StatLbl.BackgroundTransparency = 1
-StatLbl.TextColor3 = C.Sub; StatLbl.TextSize = 9; StatLbl.Font = Enum.Font.Gotham; StatLbl.TextXAlignment = Enum.TextXAlignment.Left; StatLbl.Parent = SF
+StatLbl.Size = UDim2.new(1, -10, 1, 0); StatLbl.Position = UDim2.new(0, 5, 0, 0)
+StatLbl.Text = "⬡ Idle"; StatLbl.BackgroundTransparency = 1; StatLbl.TextColor3 = C.Sub; StatLbl.TextSize = 9; StatLbl.Font = Enum.Font.Gotham; StatLbl.Parent = MiniFrame
 
-local KillLbl = Instance.new("TextLabel")
-KillLbl.Size = UDim2.new(0,50,1,0); KillLbl.Position = UDim2.new(1,-54,0,0)
-KillLbl.Text = "✦ 0"; KillLbl.BackgroundTransparency = 1
-KillLbl.TextColor3 = C.Accent; KillLbl.TextSize = 10; KillLbl.Font = Enum.Font.GothamBold; KillLbl.TextXAlignment = Enum.TextXAlignment.Right; KillLbl.Parent = SF
+local MiniToggle = Instance.new("TextButton")
+MiniToggle.Text = "❐ Settings"; MiniToggle.Size = UDim2.new(1, 0, 0, 20); MiniToggle.Position = UDim2.new(0, 0, -1, -5)
+MiniToggle.BackgroundColor3 = C.Header; MiniToggle.TextColor3 = C.Text; MiniToggle.Font = Enum.Font.GothamBold; MiniToggle.TextSize = 10; MiniToggle.Parent = MiniFrame
+Instance.new("UICorner", MiniToggle).CornerRadius = UDim.new(0, 5)
+
+MiniToggle.MouseButton1Click:Connect(function()
+    Main.Visible = not Main.Visible
+end)
 
 -- ══════════════════════════════════════════
 --  UI LOGIC
@@ -238,44 +213,19 @@ IKBtn.MouseButton1Click:Connect(function()
     IKBtn.TextColor3 = Config.Active and Color3.new(1,1,1) or C.Sub
 end)
 
-MiniBtn.MouseButton1Click:Connect(function()
-    State.IsMini = not State.IsMini
-    if State.IsMini then
-        Main:TweenSize(UDim2.new(0, W, 0, HDR + 40), "Out", "Quart", 0.3, true)
-        SF.Parent = Main
-        SF.Position = UDim2.new(0, 10, 0, HDR + 4)
-        SF.Size = UDim2.new(1, -20, 0, 32)
-        Cont.Visible = false
-    else
-        Main:TweenSize(UDim2.new(0, W, 0, H), "Out", "Quart", 0.3, true)
-        SF.Parent = Cont
-        SF.Size = UDim2.new(1, 0, 0, 32)
-        Cont.Visible = true
-    end
-end)
-
 CloseBtn.MouseButton1Click:Connect(function()
     getgenv().IK_Running = false
     if State.IKConn then State.IKConn:Disconnect() end
     SG:Destroy()
 end)
 
--- Drag
-do
+-- Drag logic for Settings & Mini Frame
+local function MakeDraggable(f)
     local drag, dStart, sPos
-    Header.InputBegan:Connect(function(i)
-        if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then
-            drag = true; dStart = i.Position; sPos = Main.Position
-            i.Changed:Connect(function() if i.UserInputState == Enum.UserInputState.End then drag = false end end)
-        end
-    end)
-    UIS.InputChanged:Connect(function(i)
-        if drag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then
-            local delta = i.Position - dStart
-            Main.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + delta.X, sPos.Y.Scale, sPos.Y.Offset + delta.Y)
-        end
-    end)
+    f.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 or i.UserInputType == Enum.UserInputType.Touch then drag = true; dStart = i.Position; sPos = f.Position; i.Changed:Connect(function() if i.UserInputState == Enum.UserInputState.End then drag = false end end) end end)
+    UIS.InputChanged:Connect(function(i) if drag and (i.UserInputType == Enum.UserInputType.MouseMovement or i.UserInputType == Enum.UserInputType.Touch) then local delta = i.Position - dStart; f.Position = UDim2.new(sPos.X.Scale, sPos.X.Offset + delta.X, sPos.Y.Scale, sPos.Y.Offset + delta.Y) end end)
 end
+MakeDraggable(Main); MakeDraggable(MiniFrame)
 
 -- ══════════════════════════════════════════
 --  CORE LOGIC
@@ -284,17 +234,10 @@ local function GetBestBoss()
     local char = Plr.Character
     local root = char and char:FindFirstChild("HumanoidRootPart")
     if not root then return nil end
-
     local best, minDist = nil, math.huge
-    local targets = {}
-
-    local npcFolder = workspace:FindFirstChild("NPCs")
-    if npcFolder then targets = npcFolder:GetChildren() else
-        for _, v in ipairs(workspace:GetChildren()) do if v:IsA("Model") then table.insert(targets, v) end end
-    end
-
+    local targets = (workspace:FindFirstChild("NPCs") and workspace.NPCs:GetChildren()) or workspace:GetChildren()
     for _, v in ipairs(targets) do
-        if v ~= char then
+        if v:IsA("Model") and v ~= char then
             local hum = v:FindFirstChildOfClass("Humanoid")
             local vRoot = v:FindFirstChild("HumanoidRootPart")
             if hum and vRoot and hum.Health > 0 and hum.MaxHealth >= Config.BossMinHP then
@@ -305,18 +248,6 @@ local function GetBestBoss()
     end
     return best
 end
-
--- Kill Counter
-task.spawn(function()
-    local f = workspace:FindFirstChild("NPCs") or workspace
-    f.ChildRemoved:Connect(function(c)
-        if State.TargetTags[c] then
-            State.Kills = State.Kills + 1
-            KillLbl.Text = "✦ " .. State.Kills
-            State.TargetTags[c] = nil
-        end
-    end)
-end)
 
 -- Main Loop
 State.IKConn = RunService.Heartbeat:Connect(function()
@@ -332,8 +263,7 @@ State.IKConn = RunService.Heartbeat:Connect(function()
 
     local boss = State.CurrentBoss
     if not boss or not boss:FindFirstChild("HumanoidRootPart") or boss:FindFirstChildOfClass("Humanoid").Health <= 0 then
-        State.CurrentBoss = nil
-        StatLbl.Text = "⬡ Scanning Boss..."; StatLbl.TextColor3 = C.Warn
+        State.CurrentBoss = nil; StatLbl.Text = "⬡ Scanning Boss..."; StatLbl.TextColor3 = C.Warn
         return
     end
 
@@ -341,31 +271,27 @@ State.IKConn = RunService.Heartbeat:Connect(function()
     local bRoot = boss:FindFirstChild("HumanoidRootPart")
     local hpPct = (bHum.Health / bHum.MaxHealth) * 100
 
-    StatLbl.Text = string.format("⚡ %s (%.1f%%)", boss.Name:sub(1,10), hpPct)
+    StatLbl.Text = string.format("⚡ [%s] %s: %.1f%%", Config.Method, boss.Name:sub(1,8), hpPct)
     StatLbl.TextColor3 = C.ON
 
     if hpPct <= Config.HPTrigger then
-        State.TargetTags[boss] = true
-
-        if os.clock() - State.LastAttack >= Config.AttackDelay then
-            local targetPos = bRoot.Position
-
-            -- HIT LOOP
-            for i = 1, Config.HitMultiplier do
-                -- Spam Ability (Slot 2) - Discovery from provided log
-                if Config.UseAbility and State.AbilityRemote then
-                    pcall(function() State.AbilityRemote:FireServer(2) end)
+        if Config.Method == "VoidKill" then
+            -- METODE VOID: Sangat cepat, tapi server mungkin tidak mencatat reward
+            pcall(function()
+                bRoot.CFrame = CFrame.new(bRoot.Position.X, -5000, bRoot.Position.Z)
+            end)
+        else
+            -- METODE HITSPAM: Menyerang lewat Remote agar server menganggap kamu pembunuhnya (Dapat Reward)
+            if os.clock() - State.LastAttack >= Config.AttackDelay then
+                local targetPos = bRoot.Position
+                for i = 1, Config.HitMultiplier do
+                    if State.AbilityRemote then pcall(function() State.AbilityRemote:FireServer(2) end) end
+                    if State.M1Remote then pcall(function() State.M1Remote:FireServer(targetPos) end) end
                 end
-
-                -- Spam M1
-                if Config.UseM1 and State.M1Remote then
-                    pcall(function() State.M1Remote:FireServer(targetPos) end)
-                end
+                State.LastAttack = os.clock()
             end
-
-            State.LastAttack = os.clock()
         end
     end
 end)
 
-print("[IK] V3 PRO Optimized Loaded!")
+print("[IK] V4 Ultimate Void Edition Loaded!")
