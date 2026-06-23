@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-samurai-black: #1a1a1a;
+  --color-samurai-crimson: #dc143c;
+  --color-samurai-gold: #ffd700;
+
+  --font-samurai: "Sawarabi Mincho", serif;
+  --font-marker: "Permanent Marker", cursive;
+}
+
+:root {
+  --background: #1a1a1a;
+  --foreground: #ffffff;
+  --samurai-crimson: #dc143c;
+  --samurai-gold: #ffd700;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-samurai), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+}
+
+.samurai-gradient {
+  background: linear-gradient(135deg, #dc143c 0%, #8b0000 100%);
+}
+
+.gold-text-glow {
+  text-shadow: 0 0 15px rgba(255, 215, 0, 0.4), 0 0 25px rgba(255, 215, 0, 0.2);
+}
+
+.crimson-border-glow {
+  box-shadow: 0 0 30px rgba(220, 20, 60, 0.15), inset 0 0 20px rgba(220, 20, 60, 0.05);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #dc143c;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #ff1a4a;
+}
+
+/* Animations */
+@keyframes mesh-pulse {
+  0%, 100% { opacity: 0.1; transform: scale(1); }
+  50% { opacity: 0.15; transform: scale(1.05); }
+}
+
+.mesh-background {
+  background-image: radial-gradient(circle at 2px 2px, rgba(255, 255, 255, 0.05) 1px, transparent 0);
+  background-size: 40px 40px;
+}
